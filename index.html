@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>cola: Constraint-based Layout in the Browser</title>
+    <link rel="stylesheet" href="bower_components/highlightjs/styles/github.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+      #examples {
+        width: 960px;
+        height: 189px;
+        margin-bottom: 2em;
+      }
+      
+      .example{
+        float: left;
+        margin-bottom: 13px;
+        width: 226px;
+        height: 180px;
+        border: solid 2px #ccc;
+        background-repeat: no-repeat;
+        background-size: contain;
+        background-position: center;
+      }
+      
+      .example:hover{
+        border-color: steelblue;
+      }
+      
+      .example:not(:nth-child(4n)){
+        margin-right: 13px;
+      }
+      
+      #left {
+        float: right;
+        width: 50%;
+      }
+      
+      #right {
+        margin-right: 50%;
+      }
+      
+      aside img {
+        max-width: 180px;
+      }
+      
+      aside ul {
+        max-width: 180px;
+        overflow-x: hidden;
+      }
+      
+    </style>
+  </head>
+  <body>
+    <header><a href="">Overview</a><a href="https://github.com/tgdwyer/WebCola/wiki">Wiki</a><a href="api">API</a><a href="https://github.com/tgdwyer/WebCola.git">Repository</a></header>
+    <h1>cola</h1>
+    <h2>Constraint-based Layout in the Browser</h2>
+    <div id="body">
+      <div id="example"></div>
+      <div id="examples"></div><p><em>cola.js</em> (a.k.a. &quot;WebCoLa&quot;) is an <a href="./LICENSE">open source</a> JavaScript
+library for arranging your HTML5 documents and diagrams using
+constraint-based optimization techniques.</p>
+<p>It works well with libraries like <a href="http://d3js.org">d3.js</a> and <a href="http://svg.org">svg.js</a>.
+The core layout is based on a complete rewrite in Javascript of the C++
+<a href="http://adaptagrams.org">libcola</a> library.</p>
+
+      <aside><p><em>cola.js</em> is developed by <a href="http://marvl.infotech.monash.edu/~dwyer">Tim Dwyer</a> at the <a href="http://marvl.infotech.monash.edu">Monash Adaptive
+Visualisation Lab. <img src="http://marvl.infotech.monash.edu.au/wp-content/themes/marvl/marvl.png" alt="MArVL"></a>
+Additional contributions gratefully received from:</p>
+<ul>
+<li>Maxim Shishmarev</li>
+<li>Nicholas Smith</li>
+<li><a href="https://github.com/Craxic">Matt Ready</a></li>
+</ul>
+
+      </aside><p>It has an adaptor for d3.js that allows you to use cola as a drop-in 
+replacement for the <a href="https://github.com/mbostock/d3/wiki/Force-Layout">D3 force layout</a>. The layout converges to a 
+local optimum unlike the D3 force layout, which forces convergence
+through a simple annealing strategy. Thus, compared to D3 force layout:</p>
+<ul>
+<li>CoLa achieves higher quality layout;</li>
+<li>is much more stable in <a href="examples/browsemovies">interactive 
+applications</a> (no &quot;jitter&quot;)</li>
+<li>it allows user specified constraints such as 
+<a href="examples/alignments">alignments</a> and <a href="examples/smallgroups">grouping</a></li>
+<li>it can automatically generate constraints to:<ul>
+<li><a href="examples/smallnonoverlappinggraph">avoid overlapping nodes</a>; or</li>
+<li>provide <a href="examples/unix">flow layout</a></li>
+</ul>
+</li>
+<li>it is may be less scalable to very large graphs.<ul>
+<li>However, it works well on an average machine on graphs with fewer 
+than 100 nodes.</li>
+</ul>
+</li>
+</ul>
+
+      <aside><p><em>&#8656; NEW! NUOVO! NOUVEAU!</em></p>
+
+      </aside><p><em>cola.js</em> can now (optionally) <a href="examples/unix">route edges to avoid intersections with 
+node boundaries</a>.</p>
+
+      <h2>Getting Started</h2><p>Replacing D3 force layout with cola.js is easy.  Include the following
+in your html:</p>
+
+      <pre><code class="html">&lt;script src=&quot;http://marvl.infotech.monash.edu/webcola/cola.v1.min.js&quot;&gt;&lt;/script&gt;</code></pre><p>Or, if you don&#39;t like your javascript files being loaded from Australia,
+then host the <code>cola.v1.min.js</code> file locally.</p>
+<p>Then replace D3 force with cola as follows:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>D3 force setup:</th>
+            <th>cola.js setup:</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <pre><code class="javscript">var force = d3.layout.force()
+  .charge(-120)
+  .linkDistance(30)
+  .size([width, height]);</code></pre>
+            </td>
+            <td>
+              <pre><code class="javscript">var d3cola = cola.d3adaptor()
+  .linkDistance(30)
+  .size([width, height]);
+  </code></pre>
+            </td>
+          </tr>
+        </tbody>
+      </table><p>You then use <code>d3cola</code> as you would <code>force</code> (or just continue to call
+it <code>force</code> if you don&#39;t care what it&#39;s actually doing as much as me).</p>
+<p>Note that while with D3 force layout you may have had to mess with
+parameters like &quot;charge&quot; to get reasonable node separation, cola
+should do a much better job of respecting the specified link distance
+in the final layout. This is because cola is directly trying to
+minimize the variance between ideal link distance and the actual
+distance in the drawing. In other words, just set <code>linkDistance</code> to
+something reasonable for the size of your nodes (in the same
+coordinate system).</p>
+<p>There are some other optional parameters available.  In the <a href="examples/downwardedges">downward
+pointing edges example</a> we kick off layout
+like so:</p>
+
+      <pre><code class="javascript">d3.cola
+  .nodes(graph.nodes)
+  .links(graph.links)
+  .constraints(graph.constraints)
+  .symmetricDiffLinkLengths()
+  .avoidOverlaps(true)
+  .start(10,15,20);
+  </code></pre><p>We specify nodes and links exactly as in D3 force layout.  However,
+<code>constraints</code> is a new parameter.  It is an array containing constraints
+specified like so:</p>
+
+      <pre><code class="javascript">{axis: "y", left: 0, right: 1, gap: 25}
+</code></pre><p>This says that the center of <code>graph.nodes[0]</code> must be at least 25 pixels
+above the center of <code>graph.nodes[1]</code>. To be more precise, it is an
+inequality constraint that requires:</p>
+
+      <pre><code class="javascript">graph.nodes[0].y + gap <= graph.nodes[1].y
+</code></pre><p><code>avoidOverlaps(true)</code> dynamically generates constraints while layout
+progresses in order to prevent the bounding boxes of nodes from sliding
+over one another (see <a href="examples/smallnonoverlappinggraph">this example</a>.</p>
+<p><code>symmetricDiffLinkLengths()</code> adjusts the ideal lengths (from that
+specified by <code>linkDistance</code>) on each link to make extra space around
+high-degree nodes.  Alternately, you can specify individual lengths on
+each link which will override the default.</p>
+<p>The <code>start()</code> method now includes up to three integer arguments.  In the
+example above, start will initially apply 10 iterations of layout with
+no constraints, 15 iterations with only structural (user-specified)
+constraints and 20 iterations of layout with all constraints including
+anti-overlap constraints.</p>
+<p>Specifying such a schedule is useful to allow the graph to untangle
+before making it relatively &quot;rigid&quot; with constraints.</p>
+<p>Click through the examples above to see other cola.js features in
+action.</p>
+<p>I&#39;m currently working hard to add more options and to support more
+classes of constraints, so please watch this space - and don&#39;t be shy
+about <a href="http://marvl.infotech.monash.edu/~dwyer">sending me feedback</a>.</p>
+
+    </div>
+    <script src="bower_components/highlightjs/highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <script src="bower_components/d3/d3.min.js"></script>
+    <script src="cola.js"></script>
+    <script>
+      var examples = ["examples/alignment/","examples/ariel/"];
+      
+      d3.select("#examples").selectAll(".example")
+          .data(d3.shuffle(examples).slice(0, 12))
+      .enter().append("a")
+          .attr("class", "example")
+          .attr("href", String)
+          .style("background-image", function (d) {
+            return "url(" + d + "thumbnail.png)";
+          });
+    </script>
+  </body>
+</html>

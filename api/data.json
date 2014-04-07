@@ -1,0 +1,196 @@
+{
+    "project": {
+        "name": "cola.js",
+        "description": "Javascript constraint based layout for high-quality graph visualization and exploration using D3.js and other web-based graphics libraries.",
+        "version": "1",
+        "url": "http://marvl.infotech.monash.edu/webcola/"
+    },
+    "files": {
+        "lib/d3adaptor.js": {
+            "name": "lib/d3adaptor.js",
+            "modules": {
+                "cola": 1
+            },
+            "classes": {
+                "d3adaptor": 1
+            },
+            "fors": {},
+            "namespaces": {}
+        }
+    },
+    "modules": {
+        "cola": {
+            "name": "cola",
+            "submodules": {},
+            "classes": {
+                "d3adaptor": 1
+            },
+            "fors": {},
+            "namespaces": {},
+            "tag": "module",
+            "file": "lib/d3adaptor.js",
+            "line": 9
+        }
+    },
+    "classes": {
+        "d3adaptor": {
+            "name": "d3adaptor",
+            "shortname": "d3adaptor",
+            "classitems": [],
+            "plugins": [],
+            "extensions": [],
+            "plugin_for": [],
+            "extension_for": [],
+            "module": "cola",
+            "namespace": "",
+            "file": "lib/d3adaptor.js",
+            "line": 9
+        }
+    },
+    "classitems": [
+        {
+            "file": "lib/d3adaptor.js",
+            "line": 82,
+            "description": "a list of nodes",
+            "itemtype": "property",
+            "name": "nodes",
+            "type": "Array",
+            "default": "empty list",
+            "class": "d3adaptor",
+            "module": "cola"
+        },
+        {
+            "file": "lib/d3adaptor.js",
+            "line": 93,
+            "description": "a list of hierarchical groups defined over nodes",
+            "itemtype": "property",
+            "name": "groups",
+            "type": "Array",
+            "default": "empty list",
+            "class": "d3adaptor",
+            "module": "cola"
+        },
+        {
+            "file": "lib/d3adaptor.js",
+            "line": 113,
+            "description": "if true, the layout will not permit overlaps of the node bounding boxes (defined by the width and height properties on nodes)",
+            "itemtype": "property",
+            "name": "avoidOverlaps",
+            "type": "bool",
+            "default": "false",
+            "class": "d3adaptor",
+            "module": "cola"
+        },
+        {
+            "file": "lib/d3adaptor.js",
+            "line": 125,
+            "description": "if true, the layout will not permit overlaps of the node bounding boxes (defined by the width and height properties on nodes)",
+            "itemtype": "property",
+            "name": "avoidOverlaps",
+            "type": "bool",
+            "default": "false",
+            "class": "d3adaptor",
+            "module": "cola"
+        },
+        {
+            "file": "lib/d3adaptor.js",
+            "line": 138,
+            "description": "causes constraints to be generated such that directed graphs are laid out either from left-to-right or top-to-bottom.\na separation constraint is generated in the selected axis for each edge that is not involved in a cycle (part of a strongly connected component)",
+            "params": [
+                {
+                    "name": "axis",
+                    "description": "'x' for left-to-right, 'y' for top-to-bottom",
+                    "type": "String"
+                },
+                {
+                    "name": "minSeparation",
+                    "description": "minimum spacing required across edges",
+                    "type": "Number"
+                }
+            ],
+            "class": "d3adaptor",
+            "module": "cola"
+        },
+        {
+            "file": "lib/d3adaptor.js",
+            "line": 153,
+            "description": "links defined as source, target pairs over nodes",
+            "itemtype": "property",
+            "name": "links",
+            "type": "Array",
+            "default": "empty list",
+            "class": "d3adaptor",
+            "module": "cola"
+        },
+        {
+            "file": "lib/d3adaptor.js",
+            "line": 164,
+            "description": "list of constraints of various types",
+            "itemtype": "property",
+            "name": "constraints",
+            "type": "{array}",
+            "default": "empty list",
+            "class": "d3adaptor",
+            "module": "cola"
+        },
+        {
+            "file": "lib/d3adaptor.js",
+            "line": 176,
+            "description": "Matrix of ideal distances between all pairs of nodes.\nIf unspecified, the ideal distances for pairs of nodes will be based on the shortest path distance between them.",
+            "itemtype": "property",
+            "name": "distanceMatrix",
+            "type": "{Array of Array of Number}",
+            "default": "null",
+            "class": "d3adaptor",
+            "module": "cola"
+        },
+        {
+            "file": "lib/d3adaptor.js",
+            "line": 189,
+            "description": "Size of the layout canvas dimensions [x,y]. Currently only used to determine the midpoint which is taken as the starting position\nfor nodes with no preassigned x and y.",
+            "itemtype": "property",
+            "name": "size",
+            "type": "{Array of Number}",
+            "class": "d3adaptor",
+            "module": "cola"
+        },
+        {
+            "file": "lib/d3adaptor.js",
+            "line": 243,
+            "description": "start the layout process",
+            "itemtype": "method",
+            "name": "start",
+            "params": [
+                {
+                    "name": "initialUnconstrainedIterations",
+                    "description": "unconstrained initial layout iterations",
+                    "type": "Number",
+                    "optional": true,
+                    "optdefault": "0"
+                },
+                {
+                    "name": "initialUserConstraintIterations",
+                    "description": "initial layout iterations with user-specified constraints",
+                    "type": "Number",
+                    "optional": true,
+                    "optdefault": "0"
+                },
+                {
+                    "name": "initialAllConstraintsIterations",
+                    "description": "initial layout iterations with all constraints including non-overlap",
+                    "type": "Number",
+                    "optional": true,
+                    "optdefault": "0"
+                }
+            ],
+            "class": "d3adaptor",
+            "module": "cola"
+        }
+    ],
+    "warnings": [
+        {
+            "message": "Missing item type\ncauses constraints to be generated such that directed graphs are laid out either from left-to-right or top-to-bottom.\na separation constraint is generated in the selected axis for each edge that is not involved in a cycle (part of a strongly connected component)",
+            "line": " lib/d3adaptor.js:138"
+        }
+    ]
+}
