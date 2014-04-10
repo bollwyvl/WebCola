@@ -822,46 +822,46 @@ var cola;
         return n;
     }
 
-    function getNeighbours(n, links) {
+    function getNeighbours(n, links, getSourceIndex, getTargetIndex) {
         var neighbours = new Array(n);
         for (var i = 0; i < n; ++i) {
             neighbours[i] = {};
         }
         links.forEach(function (e) {
-            neighbours[e.source][e.target] = {};
-            neighbours[e.target][e.source] = {};
+            neighbours[getSourceIndex(e)][getTargetIndex(e)] = {};
+            neighbours[getTargetIndex(e)][getSourceIndex(e)] = {};
         });
         return neighbours;
     }
 
-    function computeLinkLengths(n, links, w, f) {
-        var neighbours = getNeighbours(n, links);
+    function computeLinkLengths(n, links, w, f, getSourceIndex, getTargetIndex) {
+        var neighbours = getNeighbours(n, links, getSourceIndex, getTargetIndex);
         links.forEach(function (l) {
-            var a = neighbours[l.source];
-            var b = neighbours[l.target];
+            var a = neighbours[getSourceIndex(l)];
+            var b = neighbours[getTargetIndex(l)];
 
             l.length = 1 + w * f(a, b);
         });
     }
 
-    function symmetricDiffLinkLengths(n, links, w) {
+    function symmetricDiffLinkLengths(n, links, getSourceIndex, getTargetIndex, w) {
         if (typeof w === "undefined") { w = 1; }
         computeLinkLengths(n, links, w, function (a, b) {
             return Math.sqrt(unionCount(a, b) - intersectionCount(a, b));
-        });
+        }, getSourceIndex, getTargetIndex);
     }
     cola.symmetricDiffLinkLengths = symmetricDiffLinkLengths;
 
-    function jaccardLinkLengths(n, links, w) {
+    function jaccardLinkLengths(n, links, getSourceIndex, getTargetIndex, w) {
         if (typeof w === "undefined") { w = 1; }
         computeLinkLengths(n, links, w, function (a, b) {
             return Math.min(Object.keys(a).length, Object.keys(b).length) < 1.1 ? 0 : intersectionCount(a, b) / unionCount(a, b);
-        });
+        }, getSourceIndex, getTargetIndex);
     }
     cola.jaccardLinkLengths = jaccardLinkLengths;
 
-    function generateDirectedEdgeConstraints(n, links, axis, minSeparation) {
-        var components = stronglyConnectedComponents(n, links);
+    function generateDirectedEdgeConstraints(n, links, axis, getMinSeparation, getSourceIndex, getTargetIndex) {
+        var components = stronglyConnectedComponents(n, links, getSourceIndex, getTargetIndex);
         var nodes = {};
         components.filter(function (c) {
             return c.length > 1;
@@ -872,13 +872,13 @@ var cola;
         });
         var constraints = [];
         links.forEach(function (l) {
-            var u = nodes[l.source], v = nodes[l.target];
+            var u = nodes[l.source.index], v = nodes[l.target.index];
             if (!u || !v || u.component !== v.component) {
                 constraints.push({
                     axis: axis,
-                    left: l.source,
-                    right: l.target,
-                    gap: minSeparation
+                    left: getSourceIndex(l),
+                    right: getTargetIndex(l),
+                    gap: getMinSeparation(l)
                 });
             }
         });
@@ -886,7 +886,7 @@ var cola;
     }
     cola.generateDirectedEdgeConstraints = generateDirectedEdgeConstraints;
 
-    function stronglyConnectedComponents(numVertices, edges) {
+    function stronglyConnectedComponents(numVertices, edges, getSourceIndex, getTargetIndex) {
         var adjList = new Array(numVertices);
         var index = new Array(numVertices);
         var lowValue = new Array(numVertices);
@@ -900,7 +900,7 @@ var cola;
         }
 
         for (var i = 0; i < edges.length; ++i) {
-            adjList[edges[i].source].push(edges[i].target);
+            adjList[getSourceIndex(edges[i])].push(getTargetIndex(edges[i]));
         }
 
         var count = 0;
@@ -2216,8 +2216,6 @@ var vpsc;
 })(vpsc || (vpsc = {}));
 var shortestpaths;
 (function (shortestpaths) {
-    
-
     var Neighbour = (function () {
         function Neighbour(id, distance) {
             this.id = id;
@@ -2235,7 +2233,7 @@ var shortestpaths;
     })();
 
     var Calculator = (function () {
-        function Calculator(n, es) {
+        function Calculator(n, es, getSourceIndex, getTargetIndex, getLength) {
             this.n = n;
             this.es = es;
             this.neighbours = new Array(this.n);
@@ -2246,8 +2244,8 @@ var shortestpaths;
             i = this.es.length;
             while (i--) {
                 var e = this.es[i];
-                var u = e.source, v = e.target;
-                var d = typeof e.length !== 'undefined' ? e.length : 1;
+                var u = getSourceIndex(e), v = getTargetIndex(e);
+                var d = getLength(e);
                 this.neighbours[u].neighbours.push(new Neighbour(v, d));
                 this.neighbours[v].neighbours.push(new Neighbour(u, d));
             }
@@ -2275,7 +2273,7 @@ var shortestpaths;
             }), i = this.neighbours.length, d = new Array(i);
             while (i--) {
                 var node = this.neighbours[i];
-                node.d = i === start ? 0 : Number.MAX_VALUE;
+                node.d = i === start ? 0 : Number.POSITIVE_INFINITY;
                 node.q = q.push(node);
             }
             while (!q.empty()) {
@@ -2317,6 +2315,10 @@ var shortestpaths;
  */
 var cola;
 (function (cola) {
+    if (typeof vpsc === 'undefined') {
+        vpsc = cola.vpsc;
+    }
+
     /**
      * @class d3adaptor
      */
@@ -2340,7 +2342,8 @@ var cola;
             distanceMatrix = null,
             descent = null,
             directedLinkConstraints = null,
-            threshold = 1e-5;
+            threshold = 1e-5,
+            defaultNodeSize = 10;
 
         d3adaptor.tick = function () {
             if (alpha < threshold) {
@@ -2391,12 +2394,26 @@ var cola;
         };
 
         /**
-         * a list of nodes
+         * the list of nodes.
+         * If nodes has not been set, but links has, then we instantiate a nodes list here, of the correct size,
+         * before returning it.
          * @property nodes {Array}
          * @default empty list
          */
         d3adaptor.nodes = function (v) {
-            if (!arguments.length) return nodes;
+            if (!arguments.length) {
+                if (nodes.length === 0 && links.length > 0) {
+                    var n = 0;
+                    links.forEach(function (l) {
+                        n = Math.max(n, l.source, l.target);
+                    });
+                    nodes = new Array(++n);
+                    for (var i = 0; i < n; ++i) {
+                        nodes[i] = {};
+                    }
+                }
+                return nodes;
+            }
             nodes = v;
             return d3adaptor;
         };
@@ -2450,13 +2467,13 @@ var cola;
          * causes constraints to be generated such that directed graphs are laid out either from left-to-right or top-to-bottom.
          * a separation constraint is generated in the selected axis for each edge that is not involved in a cycle (part of a strongly connected component)
          * @param axis {string} 'x' for left-to-right, 'y' for top-to-bottom
-         * @param minSeparation {number} minimum spacing required across edges
+         * @param minSeparation {number|link=>number} either a number specifying a minimum spacing required across all links or a function to return the minimum spacing for each link
          */
         d3adaptor.flowLayout = function (axis, minSeparation) {
             if (!arguments.length) axis = 'y';
             directedLinkConstraints = {
                 axis: axis,
-                getMinSep: arguments.length > 1 ? function () { return minSeparation } : d3adaptor.linkDistance
+                getMinSeparation: typeof minSeparation === 'number' ?  function () { return minSeparation } : minSeparation
             };
             return d3adaptor;
         }
@@ -2509,6 +2526,17 @@ var cola;
             return d3adaptor;
         };
 
+        /**
+         * Default size (assume nodes are square so both width and height) to use in packing if node width/height are not specified.
+         * @property defaultNodeSize
+         * @type {Number}
+         */
+        d3adaptor.defaultNodeSize = function (x) {
+            if (!arguments.length) return defaultNodeSize;
+            defaultNodeSize = x;
+            return d3adaptor;
+        };
+
         d3adaptor.linkDistance = function (x) {
             if (!arguments.length) 
 				return typeof linkDistance === "function" ? linkDistance() : linkDistance;
@@ -2541,14 +2569,14 @@ var cola;
             return d3adaptor;
         };
 
-        d3adaptor.symmetricDiffLinkLengths = function (w) {
-            cola.symmetricDiffLinkLengths(nodes.length, links, w);
-            return d3adaptor;
+        d3adaptor.symmetricDiffLinkLengths = function (idealLength, w) {
+            cola.symmetricDiffLinkLengths(this.nodes().length, links, getSourceIndex, getTargetIndex, w);
+            return function (l) { return idealLength * l.length };
         }
 
-        d3adaptor.jaccardLinkLengths = function (w) {
-            cola.jaccardLinkLengths(nodes.length, links, w)
-            return d3adaptor;
+        d3adaptor.jaccardLinkLengths = function (idealLength, w) {
+            cola.jaccardLinkLengths(this.nodes().length, links, getSourceIndex, getTargetIndex, w);
+            return function (l) { return idealLength * l.length };
         }
 
         /**
@@ -2561,7 +2589,7 @@ var cola;
         d3adaptor.start = function () {
             var i,
                 j,
-                n = nodes.length,
+                n = this.nodes().length,
                 N = n + 2 * groups.length,
                 m = links.length,
                 w = size[0],
@@ -2593,26 +2621,21 @@ var cola;
                 // use the user specified distanceMatrix
                 distances = distanceMatrix;
             } else {
+                var getLength = function (e) { return typeof linkDistance === "function" ? +linkDistance.call(this, e, i) : linkDistance };
+
                 // construct an n X n distance matrix based on shortest paths through graph (with respect to edge.length).
-                var edges = links.map(function (e, i) {
-                    return {
-                        source: typeof e.source === 'number' ? e.source : e.source.index,
-                        target: typeof e.target === 'number' ? e.target : e.target.index,
-                        length: typeof e.length !== 'undefined' ? e.length : 1
-                    };
-                });
-                distances = (new shortestpaths.Calculator(N, edges)).DistanceMatrix();
+                distances = (new cola.shortestpaths.Calculator(N, links, getSourceIndex, getTargetIndex, getLength)).DistanceMatrix();
 
                 // G is a square matrix with G[i][j] = 1 iff there exists an edge between node i and node j
                 // otherwise 2. (
                 G = cola.Descent.createSquareMatrix(N, function () { return 2 });
-                edges.forEach(function (e) {
-                    G[e.source][e.target] = G[e.target][e.source] = 1;
+                links.forEach(function (e) {
+                    G[getSourceIndex(e)][getTargetIndex(e)] = G[getTargetIndex(e)][getSourceIndex(e)] = 1;
                 });
             }
 
             var D = cola.Descent.createSquareMatrix(N, function (i, j) {
-                return distances[i][j] * d3adaptor.linkDistance();
+                return distances[i][j];
             });
 
             if (rootGroup && typeof rootGroup.groups !== 'undefined') {
@@ -2626,7 +2649,7 @@ var cola;
             } else rootGroup = { leaves: nodes, groups: [] };
 
             if (directedLinkConstraints) {
-                constraints = (constraints || []).concat(cola.generateDirectedEdgeConstraints(n, links, directedLinkConstraints.axis, directedLinkConstraints.getMinSep()));
+                constraints = (constraints || []).concat(cola.generateDirectedEdgeConstraints(n, links, directedLinkConstraints.axis, directedLinkConstraints.getMinSeparation, getSourceIndex, getTargetIndex));
             }
 
             
@@ -2662,7 +2685,7 @@ var cola;
 
             // recalculate nodes position for disconnected graphs
             if (!distanceMatrix && handleDisconnected) {
-                applyPacking(separateGraphs(nodes, links), w, h);
+                cola.applyPacking(cola.separateGraphs(nodes, links), w, h, defaultNodeSize);
 
                 nodes.forEach(function (v, i) {
                     descent.x[0][i] = v.x, descent.x[1][i] = v.y;
@@ -2725,6 +2748,20 @@ var cola;
                 .call(drag);
         };
 
+        //The link source and target may be just a node index, or they may be references to nodes themselves.
+        function getSourceIndex(e) {
+            return typeof e.source === 'number' ? e.source : e.source.index;
+        }
+
+        //The link source and target may be just a node index, or they may be references to nodes themselves.
+        function getTargetIndex(e) {
+            return typeof e.target === 'number' ? e.target : e.target.index;
+        }
+        // Get a string ID for a given link.
+        d3adaptor.linkId = function (e) {
+            return getSourceIndex(e) + "-" + getTargetIndex(e);
+        }
+
         function dragmove(d) {
             d.px = d3.event.x, d.py = d3.event.y;
             d3adaptor.resume(); // restart annealing
@@ -2759,228 +2796,233 @@ var cola;
     }
     return cola;
 })(cola || (cola = {}));
-applyPacking.PADDING = 10;
-applyPacking.GOLDEN_SECTION = (1 + Math.sqrt(5)) / 2;
-applyPacking.FLOAT_EPSILON = 0.00001;
 
-// assign x, y to nodes while using box packing algorithm for disconnected graphs
-function applyPacking(graphs, w, h, node_size, desired_ratio){
+var cola;
+(function (cola) {
+    var applyPacking = {}
+    applyPacking.PADDING = 10;
+    applyPacking.GOLDEN_SECTION = (1 + Math.sqrt(5)) / 2;
+    applyPacking.FLOAT_EPSILON = 0.00001;
 
-  var init_x = 0,
-      init_y = 0,
+    // assign x, y to nodes while using box packing algorithm for disconnected graphs
+    cola.applyPacking = function (graphs, w, h, node_size, desired_ratio){
 
-      svg_width = w,
-      svg_height = h,
+        var init_x = 0,
+            init_y = 0,
 
-      desired_ratio = typeof desired_ratio !== 'undefined' ? desired_ratio : 1,
-      node_size = typeof node_size !== 'undefined' ? node_size : 6,
+            svg_width = w,
+            svg_height = h,
 
-      real_width,
-      real_height,
-      min_width,
+            desired_ratio = typeof desired_ratio !== 'undefined' ? desired_ratio : 1,
+            node_size = typeof node_size !== 'undefined' ? node_size : 6,
 
-      global_bottom,
-      line;
+            real_width,
+            real_height,
+            min_width,
+
+            global_bottom,
+            line;
 	  
-  if (graphs.length == 0)
-    return;
+        if (graphs.length == 0)
+            return;
 
-  calculate_bb(graphs);
-  apply(graphs);
-  put_nodes_to_right_positions(graphs);
+        calculate_bb(graphs);
+        apply(graphs);
+        put_nodes_to_right_positions(graphs);
 
-  // get bounding boxes for all separate graphs
-  function calculate_bb(graphs){
-    for (var i = 0; i < graphs.length; i++){
-        var graph = graphs[i];
-        calculate_single_bb(graph);
-    }
+        // get bounding boxes for all separate graphs
+        function calculate_bb(graphs){
+            for (var i = 0; i < graphs.length; i++){
+                var graph = graphs[i];
+                calculate_single_bb(graph);
+            }
 
-    function calculate_single_bb(graph){
-        var min_x = Number.MAX_VALUE, min_y = Number.MAX_VALUE,
-         max_x = 0, max_y = 0;
+            function calculate_single_bb(graph){
+                var min_x = Number.MAX_VALUE, min_y = Number.MAX_VALUE,
+                 max_x = 0, max_y = 0;
 
-        for (var j = 0; j < graph.array.length; j++) {
-            var v = graph.array[j];
-            var w = typeof v.width !== 'undefined' ? v.width : node_size;
-            var h = typeof v.height !== 'undefined' ? v.height : node_size;
-            w /= 2;
-            h /= 2;
-            max_x = Math.max(v.x + w, max_x);
-            min_x = Math.min(v.x - w, min_x);
-            max_y = Math.max(v.y + h, max_y);
-            min_y = Math.min(v.y - h, min_y);
+                for (var j = 0; j < graph.array.length; j++) {
+                    var v = graph.array[j];
+                    var w = typeof v.width !== 'undefined' ? v.width : node_size;
+                    var h = typeof v.height !== 'undefined' ? v.height : node_size;
+                    w /= 2;
+                    h /= 2;
+                    max_x = Math.max(v.x + w, max_x);
+                    min_x = Math.min(v.x - w, min_x);
+                    max_y = Math.max(v.y + h, max_y);
+                    min_y = Math.min(v.y - h, min_y);
+                }
+
+                graph.width = max_x - min_x;
+                graph.height = max_y - min_y;
+            }
         }
 
-        graph.width = max_x - min_x;
-        graph.height = max_y - min_y;
-    }
-  }
-
-  // actuall assigning of position to nodes
-  function put_nodes_to_right_positions(graphs){
+        // actuall assigning of position to nodes
+        function put_nodes_to_right_positions(graphs){
     
 
-    for (var i = 0; i < graphs.length; i++){
-      // calculate current graph center:
-      var center = {x: 0, y: 0};
-      for (var j = 0; j < graphs[i].array.length; j++){
-        var node = graphs[i].array[j];
-        center.x += node.x;
-        center.y += node.y;
-      }
-      center.x /= graphs[i].array.length;
-      center.y /= graphs[i].array.length;
+            for (var i = 0; i < graphs.length; i++){
+                // calculate current graph center:
+                var center = {x: 0, y: 0};
+                for (var j = 0; j < graphs[i].array.length; j++){
+                    var node = graphs[i].array[j];
+                    center.x += node.x;
+                    center.y += node.y;
+                }
+                center.x /= graphs[i].array.length;
+                center.y /= graphs[i].array.length;
       
-      // calculate current top left corner:
-      var corner = {x: center.x - graphs[i].width/2, 
+                // calculate current top left corner:
+                var corner = {x: center.x - graphs[i].width/2, 
                     y: center.y - graphs[i].height/2}
 
-      var offset = {x: graphs[i].x - corner.x,
+                var offset = {x: graphs[i].x - corner.x,
                     y: graphs[i].y - corner.y}
 
-      // put nodes:
-      for (var j = 0; j < graphs[i].array.length; j++){
-        var node = graphs[i].array[j];
-        node.x = node.x + offset.x + svg_width/2 - real_width/2;
-        node.y = node.y + offset.y + svg_height/2 - real_height/2;
-      }
-    }
-  }
+                // put nodes:
+                for (var j = 0; j < graphs[i].array.length; j++){
+                    var node = graphs[i].array[j];
+                    node.x = node.x + offset.x + svg_width/2 - real_width/2;
+                    node.y = node.y + offset.y + svg_height/2 - real_height/2;
+                }
+            }
+        }
 
-  // starts box packing algorithm
-  // desired ratio is 1 by default
-  function apply(data, desired_ratio){
-    data.sort(function (a, b) { return b.height - a.height; });
+        // starts box packing algorithm
+        // desired ratio is 1 by default
+        function apply(data, desired_ratio){
+            data.sort(function (a, b) { return b.height - a.height; });
 
-    min_width = data.reduce(function(a, b) {
-      return a.width < b.width ? a.width : b.width;
-    });
+            min_width = data.reduce(function(a, b) {
+                return a.width < b.width ? a.width : b.width;
+            });
 
-    var left = x1 = 10;
-    var right = x2 = get_entire_width(data);
+            var left = x1 = 10;
+            var right = x2 = get_entire_width(data);
     
-    f_x1 = 0;
-    f_x2 = 10;
+            f_x1 = 0;
+            f_x2 = 10;
 
-    while ((Math.abs(x1 - x2) > min_width) || Math.abs(f_x1 - f_x2) > applyPacking.FLOAT_EPSILON ) {
+            while ((Math.abs(x1 - x2) > min_width) || Math.abs(f_x1 - f_x2) > applyPacking.FLOAT_EPSILON ) {
 
-      var x1 = right - (right - left) / applyPacking.GOLDEN_SECTION;
-      var x2 = left + (right - left) / applyPacking.GOLDEN_SECTION; 
-      var f_x1 = step(data, x1);
-      var f_x2 = step(data, x2);
+                var x1 = right - (right - left) / applyPacking.GOLDEN_SECTION;
+                var x2 = left + (right - left) / applyPacking.GOLDEN_SECTION; 
+                var f_x1 = step(data, x1);
+                var f_x2 = step(data, x2);
 
-      if (f_x1 > f_x2) left = x1; else right = x2;    
+                if (f_x1 > f_x2) left = x1; else right = x2;    
+            }
+        }
+
+        // one iteration of the optimization method
+        // (gives a proper, but not necessarily optimal packing)
+        function step(data, max_width){
+            line = [];
+            real_width = 0;
+            real_height = 0;
+            global_bottom = init_y;
+
+            for (var i = 0; i < data.length; i++){
+                var o = data[i];
+                put_rect(o, max_width);
+            }
+
+            return Math.abs(get_real_ratio() - desired_ratio);
+        }
+
+        // looking for a position to one box 
+        function put_rect(rect, max_width){
+            line.push(rect);
+
+            var parent = undefined;
+
+            for (var i = 0; i < line.length; i++){
+                if ((line[i].space_left >= rect.height) && (line[i].x + line[i].width + rect.width + applyPacking.PADDING - max_width) <= applyPacking.FLOAT_EPSILON){
+                    parent = line[i];
+                    break;
+                }
+            }
+
+            if (parent !== undefined){
+                rect.x = parent.x + parent.width + applyPacking.PADDING;
+                rect.y = parent.bottom;
+                rect.space_left = rect.height;
+                rect.bottom = rect.y;
+                parent.space_left -= rect.height + applyPacking.PADDING;
+                parent.bottom += rect.height + applyPacking.PADDING;
+            } else {
+                rect.y = global_bottom;
+                global_bottom += rect.height + applyPacking.PADDING;
+                rect.x = init_x;
+                rect.bottom = rect.y;
+                rect.space_left = rect.height;
+            }
+
+            if (rect.y + rect.height - real_height > -applyPacking.FLOAT_EPSILON) real_height = rect.y + rect.height - init_y;
+            if (rect.x + rect.width - real_width > -applyPacking.FLOAT_EPSILON) real_width = rect.x + rect.width - init_x;
+        };
+
+        function get_entire_width(data){
+            var width = 0;
+            data.forEach(function (d) {return width += d.width + applyPacking.PADDING;});
+            return width;
+        }
+
+        function get_real_ratio(){
+            return (real_width / real_height);
+        }
     }
-  }
 
-  // one iteration of the optimization method
-  // (gives a proper, but not necessarily optimal packing)
-  function step(data, max_width){
-    line = [];
-    real_width = 0;
-    real_height = 0;
-    global_bottom = init_y;
+    // seraration of disconnected graphs
+    // returns an array of {}
+    cola.separateGraphs = function(nodes, links){
+        var marks = {};
+        var ways = {};
+        graphs = [];
+        var clusters = 0;
 
-    for (var i = 0; i < data.length; i++){
-      var o = data[i];
-      put_rect(o, max_width);
-    }
-
-    return Math.abs(get_real_ratio() - desired_ratio);
-  }
-
-  // looking for a position to one box 
-  function put_rect(rect, max_width){
-    line.push(rect);
-
-    var parent = undefined;
-
-    for (var i = 0; i < line.length; i++){
-      if ((line[i].space_left >= rect.height) && (line[i].x + line[i].width + rect.width + applyPacking.PADDING - max_width) <= applyPacking.FLOAT_EPSILON){
-        parent = line[i];
-        break;
-      }
-    }
-
-    if (parent !== undefined){
-      rect.x = parent.x + parent.width + applyPacking.PADDING;
-      rect.y = parent.bottom;
-      rect.space_left = rect.height;
-      rect.bottom = rect.y;
-      parent.space_left -= rect.height + applyPacking.PADDING;
-      parent.bottom += rect.height + applyPacking.PADDING;
-    } else {
-      rect.y = global_bottom;
-      global_bottom += rect.height + applyPacking.PADDING;
-      rect.x = init_x;
-      rect.bottom = rect.y;
-      rect.space_left = rect.height;
-    }
-
-    if (rect.y + rect.height - real_height > -applyPacking.FLOAT_EPSILON) real_height = rect.y + rect.height - init_y;
-    if (rect.x + rect.width - real_width > -applyPacking.FLOAT_EPSILON) real_width = rect.x + rect.width - init_x;
-  };
-
-  function get_entire_width(data){
-    var width = 0;
-    data.forEach(function (d) {return width += d.width + applyPacking.PADDING;});
-    return width;
-  }
-
-  function get_real_ratio(){
-    return (real_width / real_height);
-  }
-}
-
-// seraration of disconnected graphs
-// returns an array of {}
-function separateGraphs(nodes, links){
-    var marks = {};
-    var ways = {};
-    graphs = [];
-    var clusters = 0;
-
-    for (var i = 0; i < links.length; i++){
-        var link = links[i];
-        var n1 = link.source;
-        var n2 = link.target;
-        if (ways[n1.index]) 
-            ways[n1.index].push(n2);
-        else
-            ways[n1.index] = [n2];
+        for (var i = 0; i < links.length; i++){
+            var link = links[i];
+            var n1 = link.source;
+            var n2 = link.target;
+            if (ways[n1.index]) 
+                ways[n1.index].push(n2);
+            else
+                ways[n1.index] = [n2];
             
-        if (ways[n2.index]) 
-            ways[n2.index].push(n1);
-        else
-            ways[n2.index] = [n1];
-    }
-
-    for (var i = 0; i < nodes.length; i++){
-        var node = nodes[i];
-        if (marks[node.index]) continue;
-        explore_node(node, true);
-    }
-
-    function explore_node(n, is_new){
-        if (marks[n.index] !== undefined) return;
-        if (is_new) {
-            clusters++;
-            graphs.push({array:[]});
+            if (ways[n2.index]) 
+                ways[n2.index].push(n1);
+            else
+                ways[n2.index] = [n1];
         }
-        marks[n.index] = clusters;
-        graphs[clusters - 1].array.push(n);
-        var adjasent = ways[n.index];
-        if (!adjasent) return;
+
+        for (var i = 0; i < nodes.length; i++){
+            var node = nodes[i];
+            if (marks[node.index]) continue;
+            explore_node(node, true);
+        }
+
+        function explore_node(n, is_new){
+            if (marks[n.index] !== undefined) return;
+            if (is_new) {
+                clusters++;
+                graphs.push({array:[]});
+            }
+            marks[n.index] = clusters;
+            graphs[clusters - 1].array.push(n);
+            var adjacent = ways[n.index];
+            if (!adjacent) return;
         
-		for (var j = 0; j < adjasent.length; j++){
-            explore_node(adjasent[j], false);
+            for (var j = 0; j < adjacent.length; j++){
+                explore_node(adjacent[j], false);
+            }
         }
-    }
     
-    return graphs;
-}
-
+        return graphs;
+    }
+    return cola;
+})(cola || (cola = {}))
 
 //Based on js_bintrees:
 //

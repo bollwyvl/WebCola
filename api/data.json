@@ -29,7 +29,7 @@
             "namespaces": {},
             "tag": "module",
             "file": "lib/d3adaptor.js",
-            "line": 9
+            "line": 13
         }
     },
     "classes": {
@@ -44,14 +44,14 @@
             "module": "cola",
             "namespace": "",
             "file": "lib/d3adaptor.js",
-            "line": 9
+            "line": 13
         }
     },
     "classitems": [
         {
             "file": "lib/d3adaptor.js",
-            "line": 82,
-            "description": "a list of nodes",
+            "line": 87,
+            "description": "the list of nodes.\nIf nodes has not been set, but links has, then we instantiate a nodes list here, of the correct size,\nbefore returning it.",
             "itemtype": "property",
             "name": "nodes",
             "type": "Array",
@@ -61,7 +61,7 @@
         },
         {
             "file": "lib/d3adaptor.js",
-            "line": 93,
+            "line": 112,
             "description": "a list of hierarchical groups defined over nodes",
             "itemtype": "property",
             "name": "groups",
@@ -72,7 +72,7 @@
         },
         {
             "file": "lib/d3adaptor.js",
-            "line": 113,
+            "line": 132,
             "description": "if true, the layout will not permit overlaps of the node bounding boxes (defined by the width and height properties on nodes)",
             "itemtype": "property",
             "name": "avoidOverlaps",
@@ -83,7 +83,7 @@
         },
         {
             "file": "lib/d3adaptor.js",
-            "line": 125,
+            "line": 144,
             "description": "if true, the layout will not permit overlaps of the node bounding boxes (defined by the width and height properties on nodes)",
             "itemtype": "property",
             "name": "avoidOverlaps",
@@ -94,7 +94,7 @@
         },
         {
             "file": "lib/d3adaptor.js",
-            "line": 138,
+            "line": 157,
             "description": "causes constraints to be generated such that directed graphs are laid out either from left-to-right or top-to-bottom.\na separation constraint is generated in the selected axis for each edge that is not involved in a cycle (part of a strongly connected component)",
             "params": [
                 {
@@ -104,8 +104,8 @@
                 },
                 {
                     "name": "minSeparation",
-                    "description": "minimum spacing required across edges",
-                    "type": "Number"
+                    "description": "either a number specifying a minimum spacing required across all links or a function to return the minimum spacing for each link",
+                    "type": "Number|link=>number"
                 }
             ],
             "class": "d3adaptor",
@@ -113,7 +113,7 @@
         },
         {
             "file": "lib/d3adaptor.js",
-            "line": 153,
+            "line": 172,
             "description": "links defined as source, target pairs over nodes",
             "itemtype": "property",
             "name": "links",
@@ -124,7 +124,7 @@
         },
         {
             "file": "lib/d3adaptor.js",
-            "line": 164,
+            "line": 183,
             "description": "list of constraints of various types",
             "itemtype": "property",
             "name": "constraints",
@@ -135,7 +135,7 @@
         },
         {
             "file": "lib/d3adaptor.js",
-            "line": 176,
+            "line": 195,
             "description": "Matrix of ideal distances between all pairs of nodes.\nIf unspecified, the ideal distances for pairs of nodes will be based on the shortest path distance between them.",
             "itemtype": "property",
             "name": "distanceMatrix",
@@ -146,7 +146,7 @@
         },
         {
             "file": "lib/d3adaptor.js",
-            "line": 189,
+            "line": 208,
             "description": "Size of the layout canvas dimensions [x,y]. Currently only used to determine the midpoint which is taken as the starting position\nfor nodes with no preassigned x and y.",
             "itemtype": "property",
             "name": "size",
@@ -156,7 +156,17 @@
         },
         {
             "file": "lib/d3adaptor.js",
-            "line": 243,
+            "line": 220,
+            "description": "Default size (assume nodes are square so both width and height) to use in packing if node width/height are not specified.",
+            "itemtype": "property",
+            "name": "defaultNodeSize",
+            "type": "{Number}",
+            "class": "d3adaptor",
+            "module": "cola"
+        },
+        {
+            "file": "lib/d3adaptor.js",
+            "line": 273,
             "description": "start the layout process",
             "itemtype": "method",
             "name": "start",
@@ -190,7 +200,7 @@
     "warnings": [
         {
             "message": "Missing item type\ncauses constraints to be generated such that directed graphs are laid out either from left-to-right or top-to-bottom.\na separation constraint is generated in the selected axis for each edge that is not involved in a cycle (part of a strongly connected component)",
-            "line": " lib/d3adaptor.js:138"
+            "line": " lib/d3adaptor.js:157"
         }
     ]
 }

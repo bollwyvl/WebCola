@@ -96,6 +96,10 @@
  */
 var cola;
 (function (cola) {
+    if (typeof vpsc === &#x27;undefined&#x27;) {
+        vpsc = cola.vpsc;
+    }
+
     /**
      * @class d3adaptor
      */
@@ -119,7 +123,8 @@ var cola;
             distanceMatrix = null,
             descent = null,
             directedLinkConstraints = null,
-            threshold = 1e-5;
+            threshold = 1e-5,
+            defaultNodeSize = 10;
 
         d3adaptor.tick = function () {
             if (alpha &lt; threshold) {
@@ -170,12 +175,26 @@ var cola;
         };
 
         /**
-         * a list of nodes
+         * the list of nodes.
+         * If nodes has not been set, but links has, then we instantiate a nodes list here, of the correct size,
+         * before returning it.
          * @property nodes {Array}
          * @default empty list
          */
         d3adaptor.nodes = function (v) {
-            if (!arguments.length) return nodes;
+            if (!arguments.length) {
+                if (nodes.length === 0 &amp;&amp; links.length &gt; 0) {
+                    var n = 0;
+                    links.forEach(function (l) {
+                        n = Math.max(n, l.source, l.target);
+                    });
+                    nodes = new Array(++n);
+                    for (var i = 0; i &lt; n; ++i) {
+                        nodes[i] = {};
+                    }
+                }
+                return nodes;
+            }
             nodes = v;
             return d3adaptor;
         };
@@ -229,13 +248,13 @@ var cola;
          * causes constraints to be generated such that directed graphs are laid out either from left-to-right or top-to-bottom.
          * a separation constraint is generated in the selected axis for each edge that is not involved in a cycle (part of a strongly connected component)
          * @param axis {string} &#x27;x&#x27; for left-to-right, &#x27;y&#x27; for top-to-bottom
-         * @param minSeparation {number} minimum spacing required across edges
+         * @param minSeparation {number|link=&gt;number} either a number specifying a minimum spacing required across all links or a function to return the minimum spacing for each link
          */
         d3adaptor.flowLayout = function (axis, minSeparation) {
             if (!arguments.length) axis = &#x27;y&#x27;;
             directedLinkConstraints = {
                 axis: axis,
-                getMinSep: arguments.length &gt; 1 ? function () { return minSeparation } : d3adaptor.linkDistance
+                getMinSeparation: typeof minSeparation === &#x27;number&#x27; ?  function () { return minSeparation } : minSeparation
             };
             return d3adaptor;
         }
@@ -288,6 +307,17 @@ var cola;
             return d3adaptor;
         };
 
+        /**
+         * Default size (assume nodes are square so both width and height) to use in packing if node width/height are not specified.
+         * @property defaultNodeSize
+         * @type {Number}
+         */
+        d3adaptor.defaultNodeSize = function (x) {
+            if (!arguments.length) return defaultNodeSize;
+            defaultNodeSize = x;
+            return d3adaptor;
+        };
+
         d3adaptor.linkDistance = function (x) {
             if (!arguments.length) 
 				return typeof linkDistance === &quot;function&quot; ? linkDistance() : linkDistance;
@@ -320,14 +350,14 @@ var cola;
             return d3adaptor;
         };
 
-        d3adaptor.symmetricDiffLinkLengths = function (w) {
-            cola.symmetricDiffLinkLengths(nodes.length, links, w);
-            return d3adaptor;
+        d3adaptor.symmetricDiffLinkLengths = function (idealLength, w) {
+            cola.symmetricDiffLinkLengths(this.nodes().length, links, getSourceIndex, getTargetIndex, w);
+            return function (l) { return idealLength * l.length };
         }
 
-        d3adaptor.jaccardLinkLengths = function (w) {
-            cola.jaccardLinkLengths(nodes.length, links, w)
-            return d3adaptor;
+        d3adaptor.jaccardLinkLengths = function (idealLength, w) {
+            cola.jaccardLinkLengths(this.nodes().length, links, getSourceIndex, getTargetIndex, w);
+            return function (l) { return idealLength * l.length };
         }
 
         /**
@@ -340,7 +370,7 @@ var cola;
         d3adaptor.start = function () {
             var i,
                 j,
-                n = nodes.length,
+                n = this.nodes().length,
                 N = n + 2 * groups.length,
                 m = links.length,
                 w = size[0],
@@ -372,26 +402,21 @@ var cola;
                 // use the user specified distanceMatrix
                 distances = distanceMatrix;
             } else {
+                var getLength = function (e) { return typeof linkDistance === &quot;function&quot; ? +linkDistance.call(this, e, i) : linkDistance };
+
                 // construct an n X n distance matrix based on shortest paths through graph (with respect to edge.length).
-                var edges = links.map(function (e, i) {
-                    return {
-                        source: typeof e.source === &#x27;number&#x27; ? e.source : e.source.index,
-                        target: typeof e.target === &#x27;number&#x27; ? e.target : e.target.index,
-                        length: typeof e.length !== &#x27;undefined&#x27; ? e.length : 1
-                    };
-                });
-                distances = (new shortestpaths.Calculator(N, edges)).DistanceMatrix();
+                distances = (new cola.shortestpaths.Calculator(N, links, getSourceIndex, getTargetIndex, getLength)).DistanceMatrix();
 
                 // G is a square matrix with G[i][j] = 1 iff there exists an edge between node i and node j
                 // otherwise 2. (
                 G = cola.Descent.createSquareMatrix(N, function () { return 2 });
-                edges.forEach(function (e) {
-                    G[e.source][e.target] = G[e.target][e.source] = 1;
+                links.forEach(function (e) {
+                    G[getSourceIndex(e)][getTargetIndex(e)] = G[getTargetIndex(e)][getSourceIndex(e)] = 1;
                 });
             }
 
             var D = cola.Descent.createSquareMatrix(N, function (i, j) {
-                return distances[i][j] * d3adaptor.linkDistance();
+                return distances[i][j];
             });
 
             if (rootGroup &amp;&amp; typeof rootGroup.groups !== &#x27;undefined&#x27;) {
@@ -405,7 +430,7 @@ var cola;
             } else rootGroup = { leaves: nodes, groups: [] };
 
             if (directedLinkConstraints) {
-                constraints = (constraints || []).concat(cola.generateDirectedEdgeConstraints(n, links, directedLinkConstraints.axis, directedLinkConstraints.getMinSep()));
+                constraints = (constraints || []).concat(cola.generateDirectedEdgeConstraints(n, links, directedLinkConstraints.axis, directedLinkConstraints.getMinSeparation, getSourceIndex, getTargetIndex));
             }
 
             
@@ -441,7 +466,7 @@ var cola;
 
             // recalculate nodes position for disconnected graphs
             if (!distanceMatrix &amp;&amp; handleDisconnected) {
-                applyPacking(separateGraphs(nodes, links), w, h);
+                cola.applyPacking(cola.separateGraphs(nodes, links), w, h, defaultNodeSize);
 
                 nodes.forEach(function (v, i) {
                     descent.x[0][i] = v.x, descent.x[1][i] = v.y;
@@ -503,6 +528,20 @@ var cola;
                 //.on(&quot;mouseout.d3adaptor&quot;, colaMouseout)
                 .call(drag);
         };
+
+        //The link source and target may be just a node index, or they may be references to nodes themselves.
+        function getSourceIndex(e) {
+            return typeof e.source === &#x27;number&#x27; ? e.source : e.source.index;
+        }
+
+        //The link source and target may be just a node index, or they may be references to nodes themselves.
+        function getTargetIndex(e) {
+            return typeof e.target === &#x27;number&#x27; ? e.target : e.target.index;
+        }
+        // Get a string ID for a given link.
+        d3adaptor.linkId = function (e) {
+            return getSourceIndex(e) + &quot;-&quot; + getTargetIndex(e);
+        }
 
         function dragmove(d) {
             d.px = d3.event.x, d.py = d3.event.y;

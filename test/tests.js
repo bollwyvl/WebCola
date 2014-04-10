@@ -48,10 +48,20 @@ asyncTest("all-pairs shortest paths", function () {
     d3.json("../data/triangle.json", function (error, graph) {
         d3cola
             .nodes(graph.nodes)
-            .links(graph.links);
+            .links(graph.links)
+            .linkDistance(1);
         var n = d3cola.nodes().length;
         equal(n, 4);
-        var D = (new cola.shortestpaths.Calculator(n, d3cola.links())).DistanceMatrix();
+        var getSourceIndex = function (e) {
+            return e.source;
+        }
+        var getTargetIndex = function (e) {
+            return e.target;
+        }
+        var getLength = function (e) {
+            return 1;
+        }
+        var D = (new cola.shortestpaths.Calculator(n, d3cola.links(), getSourceIndex, getTargetIndex, getLength)).DistanceMatrix();
         deepEqual(D, [
             [0, 1, 1, 2],
             [1, 0, 1, 2],
@@ -74,6 +84,30 @@ asyncTest("all-pairs shortest paths", function () {
             mean = avg(lengths),
             variance = avg(lengths.map(function (l) { var d = mean - l; return d * d; }));
         ok(variance < 0.1);
+        start();
+    });
+    ok(true);
+});
+
+asyncTest("edge lengths", function () {
+    var d3cola = cola.d3adaptor();
+
+    d3.json("../data/triangle.json", function (error, graph) {
+        var length = function (l) {
+            return d3cola.linkId(l) == "2-3" ? 2 : 1;
+        }
+        d3cola
+            .linkDistance(length)
+            .nodes(graph.nodes)
+            .links(graph.links);
+        d3cola.start(10);
+        var errors = graph.links.map(function (e) {
+            var u = e.source, v = e.target,
+                dx = u.x - v.x, dy = u.y - v.y;
+            var l = Math.sqrt(dx * dx + dy * dy);
+            return Math.abs(l - length(e));
+        }), max = Math.max.apply(this, errors);
+        ok(max < 0.1);
         start();
     });
     ok(true);
@@ -282,8 +316,8 @@ test("tangent visibility graph", function () {
             start = g.addPoint(port1, 8),
             end = g.addPoint(port2, 9);
         g.addEdgeIfVisible(port1, port2, 8, 9);
-        var es = g.E.map(function (e) { return { source: e.source.id, target: e.target.id, length: e.length() } }),
-            shortestPath = (new cola.shortestpaths.Calculator(g.V.length, es)).PathFromNodeToNode(start.id, end.id);
+        var getSource = function (e) { return e.source.id }, getTarget = function(e) { return e.target.id}, getLength = function(e) { return e.length }
+            shortestPath = (new cola.shortestpaths.Calculator(g.V.length, g.E, getSource, getTarget, getLength)).PathFromNodeToNode(start.id, end.id);
         if (draw) {
             d3.select("body").append("p").html(tt);
             var svg = d3.select("body").append("svg").attr("width", 800).attr("height", 250);
@@ -483,24 +517,15 @@ test("priority queue test", function () {
     equal(cnt, 6);
 });
 
-function getLinks(graph) {
-    var m = graph.length;
-    var links = new Array(m);
-    for (var i = 0; i < m; ++i) {
-        var e = graph[i];
-        links[i] = { source: e[0], target: e[1] };
-    }
-    return links;
-}
-
 /// <reference path="shortestpaths.js"/>
 test("dijkstra", function () {
     // 0  4-3
     //  \/ /
     //  1-2
     var n = 5;
-    var links = getLinks([[0, 1], [1, 2], [2, 3], [3, 4], [4, 1]])
-    var calc = new cola.shortestpaths.Calculator(n, links);
+    var links = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 1]],
+        getSource = function (l) { return l[0] }, getTarget = function (l) { return l[1] }, getLength = function(l) { return 1 }
+    var calc = new cola.shortestpaths.Calculator(n, links, getSource, getTarget, getLength);
     var d = calc.DistancesFromNode(0);
     deepEqual(d, [0, 1, 2, 3, 2]);
     var D = calc.DistanceMatrix();
