@@ -834,29 +834,28 @@ var cola;
         return neighbours;
     }
 
-    function computeLinkLengths(n, links, w, f, getSourceIndex, getTargetIndex) {
+    function computeLinkLengths(n, links, w, f, getSourceIndex, getTargetIndex, setLength) {
         var neighbours = getNeighbours(n, links, getSourceIndex, getTargetIndex);
         links.forEach(function (l) {
             var a = neighbours[getSourceIndex(l)];
             var b = neighbours[getTargetIndex(l)];
-
-            l.length = 1 + w * f(a, b);
+            setLength(l, 1 + w * f(a, b));
         });
     }
 
-    function symmetricDiffLinkLengths(n, links, getSourceIndex, getTargetIndex, w) {
+    function symmetricDiffLinkLengths(n, links, getSourceIndex, getTargetIndex, setLength, w) {
         if (typeof w === "undefined") { w = 1; }
         computeLinkLengths(n, links, w, function (a, b) {
             return Math.sqrt(unionCount(a, b) - intersectionCount(a, b));
-        }, getSourceIndex, getTargetIndex);
+        }, getSourceIndex, getTargetIndex, setLength);
     }
     cola.symmetricDiffLinkLengths = symmetricDiffLinkLengths;
 
-    function jaccardLinkLengths(n, links, getSourceIndex, getTargetIndex, w) {
+    function jaccardLinkLengths(n, links, getSourceIndex, getTargetIndex, setLength, w) {
         if (typeof w === "undefined") { w = 1; }
         computeLinkLengths(n, links, w, function (a, b) {
             return Math.min(Object.keys(a).length, Object.keys(b).length) < 1.1 ? 0 : intersectionCount(a, b) / unionCount(a, b);
-        }, getSourceIndex, getTargetIndex);
+        }, getSourceIndex, getTargetIndex, setLength);
     }
     cola.jaccardLinkLengths = jaccardLinkLengths;
 
@@ -872,7 +871,7 @@ var cola;
         });
         var constraints = [];
         links.forEach(function (l) {
-            var u = nodes[l.source.index], v = nodes[l.target.index];
+            var u = nodes[getSourceIndex(l)], v = nodes[getTargetIndex(l)];
             if (!u || !v || u.component !== v.component) {
                 constraints.push({
                     axis: axis,
@@ -2569,13 +2568,17 @@ var cola;
             return d3adaptor;
         };
 
+        function setLinkLength(link, length) {
+            link.length = length;
+        }
+
         d3adaptor.symmetricDiffLinkLengths = function (idealLength, w) {
-            cola.symmetricDiffLinkLengths(this.nodes().length, links, getSourceIndex, getTargetIndex, w);
+            cola.symmetricDiffLinkLengths(this.nodes().length, links, getSourceIndex, getTargetIndex, setLinkLength, w);
             return function (l) { return idealLength * l.length };
         }
 
         d3adaptor.jaccardLinkLengths = function (idealLength, w) {
-            cola.jaccardLinkLengths(this.nodes().length, links, getSourceIndex, getTargetIndex, w);
+            cola.jaccardLinkLengths(this.nodes().length, links, getSourceIndex, getTargetIndex, setLinkLength, w);
             return function (l) { return idealLength * l.length };
         }
 

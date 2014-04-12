@@ -166,7 +166,7 @@
         },
         {
             "file": "lib/d3adaptor.js",
-            "line": 273,
+            "line": 277,
             "description": "start the layout process",
             "itemtype": "method",
             "name": "start",
