@@ -11,6 +11,12 @@
         margin-bottom: 2em;
       }
       
+      .clearfix:after {
+        content: "";
+        display: table;
+        clear: both;
+      }
+      
       .example{
         float: left;
         margin-bottom: 13px;
@@ -55,7 +61,7 @@
     <h1>cola</h1>
     <h2>Constraint-based Layout in the Browser</h2>
     <div id="body">
-      <div id="examples"></div><p><em>cola.js</em> (a.k.a. &quot;WebCoLa&quot;) is an <a href="./LICENSE">open source</a> JavaScript
+      <div id="examples" class="clearfix"></div><p><em>cola.js</em> (a.k.a. &quot;WebCoLa&quot;) is an <a href="./LICENSE">open source</a> JavaScript
 library for arranging your HTML5 documents and diagrams using
 constraint-based optimization techniques.</p>
 <p>It works well with libraries like <a href="http://d3js.org">d3.js</a> and <a href="http://svg.org">svg.js</a>.
@@ -186,7 +192,7 @@ about <a href="http://marvl.infotech.monash.edu/~dwyer">sending me feedback</a>.
     <script src="bower_components/d3/d3.min.js"></script>
     <script src="cola.js"></script>
     <script>
-      var examples = ["examples/alignment/","examples/ariel/","examples/brainnetwork/","examples/brainnetwork2/"];
+      var examples = ["examples/alignment/","examples/ariel/","examples/brainnetwork/","examples/brainnetwork2/","examples/brainnetworkmultiview/"];
       
       d3.select("#examples").selectAll(".example")
           .data(d3.shuffle(examples).slice(0, 12))

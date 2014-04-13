@@ -2,91 +2,103 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
   <loc>http://marvl.infotech.monash.edu/webcola/api/assets/</loc>
-  <lastmod>2014-04-12T15:37:53.000Z</lastmod>
+  <lastmod>2014-04-13T12:13:40.000Z</lastmod>
   <changefreq>daily</changefreq>
   <priority>0.5</priority>
 </url>
 <url>
   <loc>http://marvl.infotech.monash.edu/webcola/api/assets/vendor/prettify/CHANGES.html</loc>
-  <lastmod>2014-04-12T15:37:54.000Z</lastmod>
+  <lastmod>2014-04-13T12:13:41.000Z</lastmod>
   <changefreq>daily</changefreq>
   <priority>0.5</priority>
 </url>
 <url>
   <loc>http://marvl.infotech.monash.edu/webcola/api/assets/vendor/prettify/README.html</loc>
-  <lastmod>2014-04-12T15:37:54.000Z</lastmod>
+  <lastmod>2014-04-13T12:13:41.000Z</lastmod>
   <changefreq>daily</changefreq>
   <priority>0.5</priority>
 </url>
 <url>
   <loc>http://marvl.infotech.monash.edu/webcola/api/classes/d3adaptor.html</loc>
-  <lastmod>2014-04-12T15:37:54.000Z</lastmod>
+  <lastmod>2014-04-13T12:13:41.000Z</lastmod>
   <changefreq>daily</changefreq>
   <priority>0.5</priority>
 </url>
 <url>
   <loc>http://marvl.infotech.monash.edu/webcola/api/classes/</loc>
-  <lastmod>2014-04-12T15:37:53.000Z</lastmod>
+  <lastmod>2014-04-13T12:13:40.000Z</lastmod>
   <changefreq>daily</changefreq>
   <priority>0.5</priority>
 </url>
 <url>
   <loc>http://marvl.infotech.monash.edu/webcola/api/files/</loc>
-  <lastmod>2014-04-12T15:37:53.000Z</lastmod>
+  <lastmod>2014-04-13T12:13:40.000Z</lastmod>
   <changefreq>daily</changefreq>
   <priority>0.5</priority>
 </url>
 <url>
   <loc>http://marvl.infotech.monash.edu/webcola/api/files/lib_d3adaptor.js.html</loc>
-  <lastmod>2014-04-12T15:37:54.000Z</lastmod>
+  <lastmod>2014-04-13T12:13:41.000Z</lastmod>
   <changefreq>daily</changefreq>
   <priority>0.5</priority>
 </url>
 <url>
   <loc>http://marvl.infotech.monash.edu/webcola/api/</loc>
-  <lastmod>2014-04-12T15:37:54.000Z</lastmod>
+  <lastmod>2014-04-13T12:13:41.000Z</lastmod>
   <changefreq>daily</changefreq>
   <priority>0.5</priority>
 </url>
 <url>
   <loc>http://marvl.infotech.monash.edu/webcola/api/modules/cola.html</loc>
-  <lastmod>2014-04-12T15:37:54.000Z</lastmod>
+  <lastmod>2014-04-13T12:13:41.000Z</lastmod>
   <changefreq>daily</changefreq>
   <priority>0.5</priority>
 </url>
 <url>
   <loc>http://marvl.infotech.monash.edu/webcola/api/modules/</loc>
-  <lastmod>2014-04-12T15:37:53.000Z</lastmod>
+  <lastmod>2014-04-13T12:13:40.000Z</lastmod>
   <changefreq>daily</changefreq>
   <priority>0.5</priority>
 </url>
 <url>
   <loc>http://marvl.infotech.monash.edu/webcola/examples/alignment/</loc>
-  <lastmod>2014-04-12T15:37:51.000Z</lastmod>
+  <lastmod>2014-04-13T12:13:37.000Z</lastmod>
   <changefreq>daily</changefreq>
   <priority>0.5</priority>
 </url>
 <url>
   <loc>http://marvl.infotech.monash.edu/webcola/examples/ariel/</loc>
-  <lastmod>2014-04-12T15:37:51.000Z</lastmod>
+  <lastmod>2014-04-13T12:13:37.000Z</lastmod>
   <changefreq>daily</changefreq>
   <priority>0.5</priority>
 </url>
 <url>
   <loc>http://marvl.infotech.monash.edu/webcola/examples/brainnetwork/</loc>
-  <lastmod>2014-04-12T15:37:51.000Z</lastmod>
+  <lastmod>2014-04-13T12:13:37.000Z</lastmod>
+  <changefreq>daily</changefreq>
+  <priority>0.5</priority>
+</url>
+<url>
+  <loc>http://marvl.infotech.monash.edu/webcola/examples/brainnetwork2/</loc>
+  <lastmod>2014-04-13T12:13:37.000Z</lastmod>
+  <changefreq>daily</changefreq>
+  <priority>0.5</priority>
+</url>
+<url>
+  <loc>http://marvl.infotech.monash.edu/webcola/examples/brainnetworkmultiview/</loc>
+  <lastmod>2014-04-13T12:13:37.000Z</lastmod>
   <changefreq>daily</changefreq>
   <priority>0.5</priority>
 </url>
 <url>
   <loc>http://marvl.infotech.monash.edu/webcola/</loc>
-  <lastmod>2014-04-12T15:37:50.000Z</lastmod>
+  <lastmod>2014-04-13T12:13:37.000Z</lastmod>
   <changefreq>daily</changefreq>
   <priority>0.5</priority>
 </url>
 <url>
   <loc>http://marvl.infotech.monash.edu/webcola/test/</loc>
-  <lastmod>2014-04-12T15:37:50.000Z</lastmod>
+  <lastmod>2014-04-13T12:13:37.000Z</lastmod>
   <changefreq>daily</changefreq>
   <priority>0.5</priority>
 </url>
